@@ -1,0 +1,1 @@
+nest g s cars --no-spec // generamos el servicio -> el --no-spec no genera los archivos del test
