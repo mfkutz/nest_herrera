@@ -8,7 +8,6 @@ import { InjectModel } from '@nestjs/mongoose';
 @Injectable()
 export class PokemonService {
 
-
   constructor(
     @InjectModel(Pokemon.name)
     private readonly pokemonModel: Model<Pokemon>
@@ -21,11 +20,7 @@ export class PokemonService {
       const pokemon = await this.pokemonModel.create(createPokemonDto);
       return pokemon;
     } catch (error) {
-      if (error.code === 11000) {
-        throw new BadRequestException(`Pokemon already exists in DB ${JSON.stringify(error.keyValue)}`);
-      } else {
-        throw new InternalServerErrorException(`Error creating pokemon ${JSON.stringify(error)}`);
-      }
+      this.handleExceptions(error);
     }
 
   }
@@ -60,11 +55,43 @@ export class PokemonService {
     return pokemon;
   }
 
-  update(id: number, updatePokemonDto: UpdatePokemonDto) {
-    return `This action updates a #${id} pokemon`;
+  async update(term: string, updatePokemonDto: UpdatePokemonDto) {
+
+
+    try {
+      const pokemon = await this.findOne(term); //use the findOne of the service, with this we've already all the checks
+      if (updatePokemonDto.name) {
+        updatePokemonDto.name = updatePokemonDto.name.toLowerCase();
+      }
+      await pokemon.updateOne(updatePokemonDto);// updateOne doesn't support {new: true} option, but findOneAndUpdate does
+      return { ...pokemon.toJSON(), ...updatePokemonDto }; //combine original data with updated data, so shows the changes
+    } catch (error) {
+      this.handleExceptions(error);
+    }
+
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} pokemon`;
+  async remove(id: string) {
+
+    // const pokemon = await this.findOne(id);
+    // await pokemon.deleteOne();
+    // return { id }
+    // const result = await this.pokemonModel.findByIdAndDelete(id);
+
+    const { deletedCount } = await this.pokemonModel.deleteOne({ _id: id }); //here only one consult to the DB
+    if (deletedCount === 0) {
+      throw new BadRequestException(`Pokemon ${id} not found`);
+    }
+
+    return
+
+  }
+
+  private handleExceptions(error: any) {
+    if (error.code === 11000) {
+      throw new BadRequestException(`Pokemon already exists in DB ${JSON.stringify(error.keyValue)}`);
+    } else {
+      throw new InternalServerErrorException(`Error updating pokemon ${JSON.stringify(error)}`);
+    }
   }
 }
