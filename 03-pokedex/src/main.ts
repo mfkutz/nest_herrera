@@ -12,6 +12,8 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
+      transform: true, //transform data throught the Dto (in this case with pagination string to number)
+      transformOptions: { enableImplicitConversion: true }, //transform options
     })
   )
 
