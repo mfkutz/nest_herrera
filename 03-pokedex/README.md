@@ -27,3 +27,16 @@ docker-compose up -d
 
 - NestJS
 - MongoDB
+
+5. Reconstruir la base de datos con la semilla
+
+```
+localhost:3000/api/v2/seed
+```
+
+## Stack usado
+
+- MongoDB
+- NestJS
+- TypeScript
+- Docker
