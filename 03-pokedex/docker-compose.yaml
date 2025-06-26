@@ -1,8 +1,9 @@
+
 version: '3'
 
 services:
   db:
-    image: mongo:4.4
+    image: mongo:5
     restart: always
     ports:
       - 27017:27017
