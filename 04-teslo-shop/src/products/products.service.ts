@@ -5,8 +5,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 
-import { Product } from './entities/product.entity';
 import { validate as isUUID } from 'uuid'
+import { ProductImage, Product } from './entities';
 
 @Injectable()
 export class ProductsService {
@@ -15,7 +15,10 @@ export class ProductsService {
 
   constructor(
     @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>
+    private readonly productRepository: Repository<Product>,
+
+    @InjectRepository(ProductImage)
+    private readonly productImageRepository: Repository<ProductImage>
   ) { }
 
   async create(createProductDto: CreateProductDto) {
@@ -29,22 +32,35 @@ export class ProductsService {
       //   createProductDto.slug = createProductDto.slug.toLowerCase().replaceAll(" ", "_").replaceAll("'", "");
       // }
 
-      const product = this.productRepository.create(createProductDto);
+
+      const { images = [], ...productDetails } = createProductDto;
+
+      const product = this.productRepository.create({
+        ...productDetails,
+        images: images.map(image => this.productImageRepository.create({ url: image }))
+      });
       await this.productRepository.save(product);
-      return product;
+      return { ...product, images }
     } catch (error) {
       this.handleDBExceptions(error);
     }
   }
 
-  findAll(paginationDto: PaginationDto) {
+  async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
-    return this.productRepository.find({
+    const products = await this.productRepository.find({
       take: limit,
       skip: offset,
-      //TODO: relaciones
+      relations: {
+        images: true
+      }
     });
+
+    return products.map(product => ({
+      ...product,
+      images: product?.images?.map(image => image.url)
+    }))
   }
 
   async findOne(term: string) {
@@ -74,7 +90,8 @@ export class ProductsService {
 
     const product = await this.productRepository.preload({
       id: id,
-      ...updateProductDto
+      ...updateProductDto,
+      images: []
     })
 
     if (!product) throw new NotFoundException(`Product with id: ${id} not found`);

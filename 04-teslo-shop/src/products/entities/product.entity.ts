@@ -1,4 +1,5 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ProductImage } from "./";
 
 @Entity()
 export class Product {
@@ -42,7 +43,6 @@ export class Product {
     @Column("text")
     gender: string;
 
-    //tags
 
     @Column("text", {
         array: true,
@@ -50,7 +50,13 @@ export class Product {
     })
     tags: string[];
 
-    //images
+    //image relation
+    @OneToMany(
+        () => ProductImage,
+        (productImage) => productImage.product,
+        { cascade: true }
+    )
+    images?: ProductImage[];
 
     @BeforeInsert()
     checkSlugInsert() {
